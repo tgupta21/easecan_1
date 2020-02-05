@@ -3,7 +3,6 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, \
     PermissionsMixin
 from django.contrib.contenttypes.fields import GenericRelation
 from directory.models import Directory
-from transaction.models import Transaction
 
 
 class UserManager(BaseUserManager):

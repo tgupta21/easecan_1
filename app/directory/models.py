@@ -13,3 +13,4 @@ class Directory(models.Model):
 
     def __str__(self):
         return self.qr_code
+1

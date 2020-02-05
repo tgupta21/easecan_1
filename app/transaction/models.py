@@ -8,9 +8,10 @@ class Transaction(models.Model):
     """Storing all the transactions"""
     bank = models.ForeignKey(Bank, on_delete=models.PROTECT)
 
-    payee_type = models.ForeignKey(ContentType)
+    """Payee"""
+    content_type = models.ForeignKey(ContentType, on_delete=models.PROTECT)
     object_id = models.PositiveIntegerField()
-    payee = GenericForeignKey('content_type', 'object_id')
+    content_object = GenericForeignKey('content_type', 'object_id')
 
     customer = models.CharField(max_length=100)
 
