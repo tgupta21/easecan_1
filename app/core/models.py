@@ -74,7 +74,7 @@ class Shop(models.Model):
 
     is_verified = models.BooleanField(default=False)
 
-    qr_code = GenericRelation(Directory)
+    uid = GenericRelation(Directory)
 
 
 class Website(models.Model):
@@ -97,7 +97,7 @@ class Website(models.Model):
 
     is_verified = models.BooleanField(default=False)
 
-    qr_code = GenericRelation(Directory)
+    uid = GenericRelation(Directory)
 
 
 class Bank(models.Model):
@@ -105,6 +105,8 @@ class Bank(models.Model):
     email = models.OneToOneField(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=20)
     country_code = models.CharField(max_length=4)
+    token = models.CharField(max_length=100, unique=True)
+    currency = models.CharField(max_length=3)
 
     def __str__(self):
         return self.name

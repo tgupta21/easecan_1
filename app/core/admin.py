@@ -1,6 +1,8 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from core import models
+from core.models import User, Shop, Bank
+from transaction.models import Transaction
+from directory.models import Directory
 from django.utils.translation import gettext as _
 
 
@@ -30,4 +32,8 @@ class UserAdmin(BaseUserAdmin):
     )
 
 
-admin.site.register(models.User, UserAdmin)
+admin.site.register(User, UserAdmin)
+admin.site.register(Shop)
+admin.site.register(Bank)
+admin.site.register(Transaction)
+admin.site.register(Directory)
