@@ -1,46 +1,10 @@
 from django.db import models
-from core.models import User, Bank
+from user.models import Bank
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericRelation
 
 from directory.models import Directory
-
-
-class TransactionManager(models.Manager):
-
-    def payment_initialisation(self, uid, token):
-        """initialising payment"""
-        directory = Directory.objects.get(uid=uid)
-
-        if directory.is_active:
-            payee = directory.payee_object
-            bank = Bank.objects.get(token=token)
-
-            if not self.filter(uid=payee):
-                """new transaction"""
-                transaction = self.model(payee_object=payee, bank=bank)
-                transaction.save(using=self._db)
-            else:
-                """pending transaction"""
-                transaction = self.filter(uid=payee)
-
-            return transaction
-        else:
-            raise ValueError('Not an active uid')
-
-    def payment_completion(self, token, id, **kwargs):
-        """payment is successful"""
-        transaction = self.filter(id=id)
-        bank = Bank.objects.get(token=token)
-
-        if transaction.bank == bank or "":
-            transaction.update(**kwargs, status=3)
-            transaction.save(using=self._db)
-        else:
-            raise ValueError('not authorised')
-
-        return transaction
 
 
 class Transaction(models.Model):
@@ -52,30 +16,50 @@ class Transaction(models.Model):
     object_id = models.PositiveIntegerField()
     payee_object = GenericForeignKey('payee_type', 'object_id')
 
-    customer = models.CharField(max_length=100)
+    payer = models.CharField(max_length=100, default="")  # by bank
 
     initialisation_time = models.DateTimeField(auto_now=True)
     completion_time = models.DateTimeField(default="")
-    currency = models.CharField(max_length=3)
-    amount = models.DecimalField(max_digits=25, decimal_places=2, default="")
-    payment_method = models.CharField(max_length=50)
-    reference_number = models.CharField(max_length=100, default="")
+
+    merchant_currency = models.CharField(max_length=3)  # by merchant
+    merchant_amount = models.DecimalField(max_digits=25, decimal_places=2, default="")  # by merchant
+
+    payment_currency = models.CharField(max_length=3, default="")  # by bank
+    payment_amount = models.DecimalField(max_digits=25, decimal_places=2, default="")  # by bank
+
+    payment_method = models.CharField(max_length=50, default="")   # by bank
+    reference_number = models.CharField(max_length=100, default="")  # by bank
+
     international = models.BooleanField(default=False)
+
+    order_id = models.CharField(max_length=50, default="")  # by merchant
+    customer = models.CharField(max_length=100, default="")  # by merchant
 
     STATUS_CHOICES = (
         (1, 'initiated'),
-        (2, 'pending'),
+        (2, 'payment initiated'),
         (3, 'successful'),
-        (4, 'refunded'),
-        (5, 'failed'),
+        (4, 'failed'),
+        (5, 'refund initiated'),
+        (6, 'refunded')
     )
 
     status = models.PositiveSmallIntegerField(choices=STATUS_CHOICES, default=1)
     detail = models.CharField(max_length=255, default="")
     uid = GenericRelation(Directory)
 
-    objects = TransactionManager()
-
     def __str__(self):
         return self.pk
 
+    @classmethod
+    def start_new_payment(cls, payee, key):
+        """New transaction request by bank"""
+        bank = Bank.objects.get(key=key)
+        currency = bank.currency
+        return cls(payee_object=payee, bank=bank, status=2, payment_currency=currency)
+
+    @classmethod
+    def initiate_new_transaction(cls, payee, currency, amount, order_id="", customer=""):  # payee=user
+        """New Transaction request by merchant"""
+        return cls(payee_object=payee, merchant_currency=currency, merchant_amount=amount, order_id=order_id,
+                   customer=customer)
