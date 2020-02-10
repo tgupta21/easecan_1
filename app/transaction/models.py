@@ -12,9 +12,9 @@ class Transaction(models.Model):
     bank = models.ForeignKey(Bank, on_delete=models.PROTECT, default="")
 
     """Payee"""
-    payee_type = models.ForeignKey(ContentType, on_delete=models.PROTECT)
+    content_type = models.ForeignKey(ContentType, on_delete=models.PROTECT)
     object_id = models.PositiveIntegerField()
-    payee_object = GenericForeignKey('payee_type', 'object_id')
+    content_object = GenericForeignKey('content_type', 'object_id')
 
     payer = models.CharField(max_length=100, default="")  # by bank
 

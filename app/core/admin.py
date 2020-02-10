@@ -9,10 +9,9 @@ from django.utils.translation import gettext as _
 
 class UserAdmin(BaseUserAdmin):
     ordering = ['id']
-    list_display = ['phone', 'name']
+    list_display = ['phone', 'email', 'user_type']
     fieldsets = (
         (None, {'fields': ('email', 'phone', 'password')}),
-        (_('Personal Info'), {'fields': ('name',)}),
         (
             _('Permissions'),
             {
