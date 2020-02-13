@@ -1,10 +1,10 @@
 from django.contrib.auth import authenticate, get_user_model
 from rest_framework import serializers
-from .models import Shop, Website
+from .models import Merchant
 from directory.models import Directory
 
 
-class UserSerializers(serializers.ModelSerializer):
+class UserSerializer(serializers.ModelSerializer):
     """Serializer for the user object"""
 
     class Meta:
@@ -18,23 +18,21 @@ class UserSerializers(serializers.ModelSerializer):
         return get_user_model().objects.create_user(**validated_data)
 
 
-class ShopSerializers(serializers.ModelSerializer):
-    """Serializer for the shop object"""
-    user = UserSerializers(required=True)
+class MerchantSerializer(serializers.ModelSerializer):
+    """Serializer for the merchant object"""
+    user = UserSerializer(required=True)
 
     class Meta:
-        model = Shop
+        model = Merchant
         exclude = ['is_verified']
 
     def create(self, validated_data):
-        """Create a new shop with encrypted password and return it"""
+        """Create a new merchant with encrypted password and return it"""
         user_data = validated_data.pop('user')
-        user = UserSerializers.create(UserSerializers(), validated_data=user_data)
+        user = UserSerializer.create(UserSerializer(), validated_data=user_data)
         user.user_type = 2
-        shop = Shop.objects.create(user=user, **validated_data)
-        uid = Directory.create(shop)
-        uid.save()
-        return shop
+        merchant = Merchant.objects.create(user=user, **validated_data)
+        return merchant
 
 
 class AuthTokenSerializer(serializers.Serializer):

@@ -14,7 +14,7 @@ class UserManager(BaseUserManager):
 
         return user
 
-    def create_superuser(self, phone, email, password):
+    def create_superuser(self, phone, password, email=""):
         """Creates and saves a new super user"""
         user = self.create_user(phone, email, password)
         user.is_staff = True
@@ -39,9 +39,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     USER_TYPE_CHOICES = (
         (0, 'unspecified'),
         (1, 'admin'),
-        (2, 'shop'),
-        (3, 'website'),
-        (4, 'bank'),
+        (2, 'Merchant'),
+        (3, 'bank'),
     )
 
     user_type = models.PositiveSmallIntegerField(choices=USER_TYPE_CHOICES, default=0)

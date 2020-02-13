@@ -12,9 +12,13 @@ BUSINESS_TYPE = (
     (1, 'Entertainment'),
 )
 
+CURRENCY = [
+    ('INR', 'INR')
+]
 
-class Shop(models.Model):
-    """Adding shops (using mobile apps) user model"""
+
+class Merchant(models.Model):
+    """Adding Merchant user model"""
     user = models.OneToOneField(User, on_delete=models.CASCADE)
 
     business_name = models.CharField(max_length=255)
@@ -30,33 +34,11 @@ class Shop(models.Model):
 
     business_category = models.PositiveSmallIntegerField(choices=BUSINESS_TYPE)
 
-    pan_or_tin = models.CharField(max_length=100, unique=True)
-
     is_verified = models.BooleanField(default=False)
 
-    uid = GenericRelation(Directory)
+    website = models.URLField(blank=True, null=True)
 
-
-class Website(models.Model):
-    """Adding online website user model"""
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-
-    business_name = models.CharField(max_length=100)
-    business_address = models.CharField(max_length=255)
-    business_area = models.CharField(max_length=255)
-    business_pincode = models.CharField(max_length=20)
-    business_city = models.CharField(max_length=25)
-    business_state = models.CharField(max_length=25)
-    business_country = models.CharField(choices=COUNTRIES, max_length=25)
-
-    website = models.URLField()
-
-    owner_name = models.CharField(max_length=255)
-    business_category = models.PositiveSmallIntegerField(choices=BUSINESS_TYPE)
-
-    pan_or_tin = models.CharField(max_length=100, unique=True)
-
-    is_verified = models.BooleanField(default=False)
+    uid = GenericRelation(Directory, related_query_name='merchant')
 
 
 class Bank(models.Model):
@@ -67,7 +49,7 @@ class Bank(models.Model):
     country = models.CharField(choices=COUNTRIES, max_length=25)
 
     key = models.CharField(max_length=100, unique=True)
-    currency = models.CharField(max_length=3)
+    currency = models.CharField(choices=CURRENCY, max_length=3)
 
     def __str__(self):
         return self.name

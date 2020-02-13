@@ -9,31 +9,32 @@ from directory.models import Directory
 
 class Transaction(models.Model):
     """Storing all the transactions"""
-    bank = models.ForeignKey(Bank, on_delete=models.PROTECT, default="")
+    transaction_id = models.IntegerField(primary_key=True)
+    bank = models.ForeignKey(Bank, on_delete=models.PROTECT, blank=True, null=True)
 
     """Payee"""
     content_type = models.ForeignKey(ContentType, on_delete=models.PROTECT)
     object_id = models.PositiveIntegerField()
-    content_object = GenericForeignKey('content_type', 'object_id')
+    payee_object = GenericForeignKey('content_type', 'object_id')
 
-    payer = models.CharField(max_length=100, default="")  # by bank
+    payer = models.CharField(max_length=100, blank=True, null=True)  # by bank
 
     initialisation_time = models.DateTimeField(auto_now=True)
-    completion_time = models.DateTimeField(default="")
+    completion_time = models.DateTimeField(blank=True, null=True)
 
     merchant_currency = models.CharField(max_length=3)  # by merchant
-    merchant_amount = models.DecimalField(max_digits=25, decimal_places=2, default="")  # by merchant
+    merchant_amount = models.DecimalField(max_digits=25, decimal_places=2, blank=True, null=True)  # by merchant
 
-    payment_currency = models.CharField(max_length=3, default="")  # by bank
-    payment_amount = models.DecimalField(max_digits=25, decimal_places=2, default="")  # by bank
+    payment_currency = models.CharField(max_length=3, blank=True)  # by bank
+    payment_amount = models.DecimalField(max_digits=25, decimal_places=2, blank=True, null=True)  # by bank
 
-    payment_method = models.CharField(max_length=50, default="")   # by bank
-    reference_number = models.CharField(max_length=100, default="")  # by bank
+    payment_method = models.CharField(max_length=50, blank=True, null=True)   # by bank
+    reference_number = models.CharField(max_length=100, blank=True, null=True)  # by bank
 
     international = models.BooleanField(default=False)
 
-    order_id = models.CharField(max_length=50, default="")  # by merchant
-    customer = models.CharField(max_length=100, default="")  # by merchant
+    order_id = models.CharField(max_length=50, blank=True, null=True)  # by merchant
+    customer = models.CharField(max_length=100, blank=True, null=True)  # by merchant
 
     STATUS_CHOICES = (
         (1, 'initiated'),
@@ -45,15 +46,16 @@ class Transaction(models.Model):
     )
 
     status = models.PositiveSmallIntegerField(choices=STATUS_CHOICES, default=1)
-    detail = models.CharField(max_length=255, default="")
-    uid = GenericRelation(Directory)
+    detail = models.CharField(max_length=255, blank=True, null=True)
 
     def __str__(self):
-        return self.pk
+        return str(self.pk)
 
     @classmethod
-    def start_new_payment(cls, payee, key):
+    def start_new_payment(cls, uid, key):
         """New transaction request by bank"""
+        directory = Directory.objects.get(uid=uid)
+        payee = directory.payee_object
         bank = Bank.objects.get(key=key)
         currency = bank.currency
         return cls(payee_object=payee, bank=bank, status=2, payment_currency=currency)

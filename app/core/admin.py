@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from core.models import User
-from user.models import Bank, Shop, Website
+from user.models import Bank, Merchant
 from transaction.models import Transaction
 from directory.models import Directory
 from django.utils.translation import gettext as _
@@ -27,14 +27,13 @@ class UserAdmin(BaseUserAdmin):
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('phone', 'password1', 'password2')
+            'fields': ('phone', 'email', 'user_type', 'password1', 'password2')
         }),
     )
 
 
 admin.site.register(User, UserAdmin)
-admin.site.register(Shop)
-admin.site.register(Website)
+admin.site.register(Merchant)
 admin.site.register(Bank)
 admin.site.register(Transaction)
 admin.site.register(Directory)

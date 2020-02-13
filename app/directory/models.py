@@ -4,31 +4,22 @@ from django.contrib.contenttypes.models import ContentType
 import uuid
 
 
-class DirectoryManager(models.Manager):
-
-    def get_uid(self, payee):
-        """get uid for given payee"""
-        directory = self.model(content_object=payee)
-        return str(directory.uid)
-
-
 class Directory(models.Model):
     """QR codes directory for linking them"""
-    uid = models.UUIDField(default=uuid.uuid4, editable=False)
+    uid = models.UUIDField(default=uuid.uuid4, editable=False, primary_key=False)
+    display_name = models.CharField(max_length=50, blank=True, null=True)
 
     """Foreign Key to payee"""
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, editable=False)
     object_id = models.PositiveIntegerField(editable=False)
-    content_object = GenericForeignKey('content_type', 'object_id')
+    payee_object = GenericForeignKey('content_type', 'object_id')
 
     is_active = models.BooleanField(default=True)
 
-    objects = DirectoryManager()
-
     def __str__(self):
-        return str(self.uid)
+        return self.display_name+': '+str(self.uid)
 
     @classmethod
-    def create(cls, payee):
+    def create(cls, payee, name):
         """Create a new directory"""
-        return cls(content_object=payee)
+        return cls(payee_object=payee, display_name=name)
