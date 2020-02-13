@@ -11,7 +11,7 @@ class UserSerializer(serializers.ModelSerializer):
         model = get_user_model()
         fields = ('phone', 'email', 'password', 'user_type')
         read_only_fields = ('user_type',)
-        extra_kwargs = {'password': {'write_only': True, 'min_length': 5}}
+        extra_kwargs = {'password': {'write_only': True, 'min_length': 8}}
 
     def create(self, validated_data):
         """Create a new user with encrypted password and return it"""
@@ -31,6 +31,7 @@ class MerchantSerializer(serializers.ModelSerializer):
         user_data = validated_data.pop('user')
         user = UserSerializer.create(UserSerializer(), validated_data=user_data)
         user.user_type = 2
+        user.save()
         merchant = Merchant.objects.create(user=user, **validated_data)
         return merchant
 

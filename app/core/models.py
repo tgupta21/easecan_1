@@ -39,7 +39,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     USER_TYPE_CHOICES = (
         (0, 'unspecified'),
         (1, 'admin'),
-        (2, 'Merchant'),
+        (2, 'merchant'),
         (3, 'bank'),
     )
 

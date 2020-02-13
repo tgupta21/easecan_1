@@ -1,5 +1,3 @@
-from rest_framework.decorators import action
-from rest_framework.response import Response
 from .models import Directory
 from user.models import Merchant
 from rest_framework import viewsets, mixins, status

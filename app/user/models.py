@@ -40,6 +40,8 @@ class Merchant(models.Model):
 
     uid = GenericRelation(Directory, related_query_name='merchant')
 
+    currency = models.CharField(choices=CURRENCY, max_length=3)
+
 
 class Bank(models.Model):
     """Payment apps or banks user model"""
@@ -47,9 +49,6 @@ class Bank(models.Model):
     name = models.CharField(max_length=20)
 
     country = models.CharField(choices=COUNTRIES, max_length=25)
-
-    key = models.CharField(max_length=100, unique=True)
-    currency = models.CharField(choices=CURRENCY, max_length=3)
 
     def __str__(self):
         return self.name

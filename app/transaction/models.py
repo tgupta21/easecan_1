@@ -3,13 +3,13 @@ from user.models import Bank
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericRelation
+import datetime
 
 from directory.models import Directory
 
 
 class Transaction(models.Model):
     """Storing all the transactions"""
-    transaction_id = models.IntegerField(primary_key=True)
     bank = models.ForeignKey(Bank, on_delete=models.PROTECT, blank=True, null=True)
 
     """Payee"""
@@ -19,11 +19,11 @@ class Transaction(models.Model):
 
     payer = models.CharField(max_length=100, blank=True, null=True)  # by bank
 
-    initialisation_time = models.DateTimeField(auto_now=True)
+    initialisation_time = models.DateTimeField(default=datetime.datetime.utcnow)
     completion_time = models.DateTimeField(blank=True, null=True)
 
-    merchant_currency = models.CharField(max_length=3)  # by merchant
-    merchant_amount = models.DecimalField(max_digits=25, decimal_places=2, blank=True, null=True)  # by merchant
+    currency = models.CharField(max_length=3)  # by merchant
+    amount = models.DecimalField(max_digits=25, decimal_places=2, blank=True, null=True)  # by merchant
 
     payment_currency = models.CharField(max_length=3, blank=True)  # by bank
     payment_amount = models.DecimalField(max_digits=25, decimal_places=2, blank=True, null=True)  # by bank
@@ -31,37 +31,26 @@ class Transaction(models.Model):
     payment_method = models.CharField(max_length=50, blank=True, null=True)   # by bank
     reference_number = models.CharField(max_length=100, blank=True, null=True)  # by bank
 
-    international = models.BooleanField(default=False)
-
-    order_id = models.CharField(max_length=50, blank=True, null=True)  # by merchant
-    customer = models.CharField(max_length=100, blank=True, null=True)  # by merchant
+    uid = models.UUIDField()
 
     STATUS_CHOICES = (
         (1, 'initiated'),
-        (2, 'payment initiated'),
-        (3, 'successful'),
-        (4, 'failed'),
-        (5, 'refund initiated'),
-        (6, 'refunded')
+        (2, 'successful'),
+        (3, 'failed'),
+        (4, 'refund initiated'),
+        (5, 'refunded')
     )
 
     status = models.PositiveSmallIntegerField(choices=STATUS_CHOICES, default=1)
-    detail = models.CharField(max_length=255, blank=True, null=True)
+    comment = models.CharField(max_length=255, blank=True, null=True)
 
     def __str__(self):
         return str(self.pk)
 
     @classmethod
-    def start_new_payment(cls, uid, key):
+    def start_new_payment(cls, uid):
         """New transaction request by bank"""
         directory = Directory.objects.get(uid=uid)
         payee = directory.payee_object
-        bank = Bank.objects.get(key=key)
-        currency = bank.currency
-        return cls(payee_object=payee, bank=bank, status=2, payment_currency=currency)
-
-    @classmethod
-    def initiate_new_transaction(cls, payee, currency, amount, order_id="", customer=""):  # payee=user
-        """New Transaction request by merchant"""
-        return cls(payee_object=payee, merchant_currency=currency, merchant_amount=amount, order_id=order_id,
-                   customer=customer)
+        currency = payee.currency
+        return cls(payee_object=payee, status=1, uid=uid, currency=currency)
