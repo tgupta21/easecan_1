@@ -1,6 +1,6 @@
 from django.contrib.auth import authenticate, get_user_model
 from rest_framework import serializers
-from .models import Merchant
+from .models import Merchant, Customer, Payer
 from directory.models import Directory
 
 
@@ -60,3 +60,17 @@ class AuthTokenSerializer(serializers.Serializer):
 
         attrs['user'] = user
         return attrs
+
+
+class CustomerSerializer(serializers.ModelSerializer):
+    """Serialize customer object"""
+    class Meta:
+        model = Customer
+        fields = '__all__'
+
+
+class PayerSerializer(serializers.ModelSerializer):
+    """Serialize payer object"""
+    class Meta:
+        model = Payer
+        fields = '__all__'

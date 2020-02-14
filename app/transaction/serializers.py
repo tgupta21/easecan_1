@@ -1,41 +1,29 @@
 from django.contrib.contenttypes.models import ContentType
 from rest_framework import serializers
-from .models import Payment
+from .models import PaymentRequest
 from directory.models import Directory
-from user.models import Merchant
+from user.models import Merchant, Payer, Customer
+from user.serializers import CustomerSerializer, PayerSerializer
 
 
-class PayeeFieldSerializer(serializers.RelatedField):
-    """Serialize payee_object"""
-    def to_representation(self, obj):
-        return {
-            'id': obj.pk,
-            'name': obj.business_name,
-        }
-
-
-class PaymentInitialisationSerializer(serializers.ModelSerializer):
-    """Serializer for initialising transaction"""
-    payee_object = PayeeFieldSerializer(read_only=True)
+class PaymentRequestSerializer(serializers.ModelSerializer):
+    """Serializer for payment request"""
+    customer = CustomerSerializer()
 
     class Meta:
-        model = Payment
-        fields = (
-            'uid', 'id', 'payee_object', 'initialisation_time', 'currency', 'status', 'token')
-        read_only_fields = (
-            'id', 'payee_object', 'initialisation_time', 'currency', 'status', 'token')
-
-
-class PaymentCompletionSerializer(serializers.ModelSerializer):
-    payee_object = PayeeFieldSerializer(read_only=True)
-
-    class Meta:
-        model = Payment
-        fields = ('token', 'uid', 'id', 'payee_object', 'initialisation_time', 'currency', 'status', 'payer',
-                  'completion_time', 'payment_currency', 'payment_amount', 'amount', 'payment_method',
-                  'reference_number', 'comment')
-        read_only_fields = (
-            'uid', 'payee_object', 'initialisation_time', 'currency', 'status', 'completion_time')
+        model = PaymentRequest
+        fields = ('id', 'order_id', 'currency', 'amount', 'description', 'customer')
 
     def create(self, validated_data):
-        return Payment.objects.get(token=validated_data.pop('token'))
+        customer_data = validated_data.pop('customer')
+        if Customer.objects.get(phone=customer_data.get('phone'), name=customer_data.get('name')):
+            customer = Customer.objects.get(phone=customer_data.get('phone'), name=customer_data.get('name'))
+        else:
+            customer = CustomerSerializer.create(CustomerSerializer(), validated_data=customer_data)
+            customer.save()
+        payment_request = PaymentRequest(**validated_data, customer=customer)
+        payment_request.save()
+        directory = Directory.create(payee=payment_request,
+                                     name=payment_request.merchant.business_name + ': ' + payment_request.order_id)
+        directory.save()
+        return payment_request
