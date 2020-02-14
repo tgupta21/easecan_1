@@ -1,6 +1,6 @@
 from django.contrib.contenttypes.models import ContentType
 from rest_framework import serializers
-from .models import Transaction
+from .models import Payment
 from directory.models import Directory
 from user.models import Merchant
 
@@ -14,27 +14,28 @@ class PayeeFieldSerializer(serializers.RelatedField):
         }
 
 
-class TransactionInitialisationSerializer(serializers.ModelSerializer):
+class PaymentInitialisationSerializer(serializers.ModelSerializer):
     """Serializer for initialising transaction"""
     payee_object = PayeeFieldSerializer(read_only=True)
 
     class Meta:
-        model = Transaction
+        model = Payment
         fields = (
-            'uid', 'id', 'payee_object', 'initialisation_time', 'currency', 'amount', 'status')
+            'uid', 'id', 'payee_object', 'initialisation_time', 'currency', 'status', 'token')
         read_only_fields = (
-            'id', 'payee_object', 'initialisation_time', 'currency', 'amount', 'status')
-
-    def create(self, validated_data):
-        uid = validated_data.get('uid', None)
-        directory = Directory.objects.get(uid=uid)
-        if directory.payee_object.user.user_type == 2:
-            return Transaction.start_new_payment(uid=uid)
+            'id', 'payee_object', 'initialisation_time', 'currency', 'status', 'token')
 
 
-class TransactionCompletionSerializer(serializers.ModelSerializer):
-    """Serializer for completing transaction"""
-    key = serializers.CharField(max_length=100, write_only=True)
+class PaymentCompletionSerializer(serializers.ModelSerializer):
+    payee_object = PayeeFieldSerializer(read_only=True)
 
     class Meta:
-        model = Transaction
+        model = Payment
+        fields = ('token', 'uid', 'id', 'payee_object', 'initialisation_time', 'currency', 'status', 'payer',
+                  'completion_time', 'payment_currency', 'payment_amount', 'amount', 'payment_method',
+                  'reference_number', 'comment')
+        read_only_fields = (
+            'uid', 'payee_object', 'initialisation_time', 'currency', 'status', 'completion_time')
+
+    def create(self, validated_data):
+        return Payment.objects.get(token=validated_data.pop('token'))

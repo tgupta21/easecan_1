@@ -1,3 +1,4 @@
+import uuid
 from django.db import models
 from user.models import Bank
 from django.contrib.contenttypes.fields import GenericForeignKey
@@ -8,9 +9,9 @@ import datetime
 from directory.models import Directory
 
 
-class Transaction(models.Model):
+class Payment(models.Model):
     """Storing all the transactions"""
-    bank = models.ForeignKey(Bank, on_delete=models.PROTECT, blank=True, null=True)
+    bank = models.ForeignKey(Bank, on_delete=models.PROTECT)
 
     """Payee"""
     content_type = models.ForeignKey(ContentType, on_delete=models.PROTECT)
@@ -44,13 +45,15 @@ class Transaction(models.Model):
     status = models.PositiveSmallIntegerField(choices=STATUS_CHOICES, default=1)
     comment = models.CharField(max_length=255, blank=True, null=True)
 
+    token = models.UUIDField(default=uuid.uuid4)
+
     def __str__(self):
         return str(self.pk)
 
     @classmethod
-    def start_new_payment(cls, uid):
-        """New transaction request by bank"""
+    def start_new_payment(cls, uid, bank):
+        """New payment request by bank"""
         directory = Directory.objects.get(uid=uid)
         payee = directory.payee_object
         currency = payee.currency
-        return cls(payee_object=payee, status=1, uid=uid, currency=currency)
+        return cls(payee_object=payee, status=1, uid=uid, currency=currency, bank=bank)
