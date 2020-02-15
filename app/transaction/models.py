@@ -1,10 +1,10 @@
 import uuid
 from django.db import models
-from user.models import PaymentApp, Merchant, Payer, Customer
+from user.models import PaymentApp, Merchant, Payer
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericRelation
-import datetime
+from datetime import datetime
 
 from directory.models import Directory
 
@@ -16,19 +16,21 @@ class PaymentRequest(models.Model):
     currency = models.CharField(max_length=3)
     amount = models.DecimalField(decimal_places=2, max_digits=25)
     description = models.CharField(max_length=255)
-    customer = models.ForeignKey(Customer, on_delete=models.PROTECT)
+    time = models.DateTimeField(default=datetime.utcnow)
 
     def __str__(self):
         return str(self.pk)
 
 
-class Transaction(models.Model):
+class Payment(models.Model):
     """Storing all the transactions"""
-    initialisation_time = models.DateTimeField(default=datetime.datetime.utcnow)
-    currency = models.CharField(max_length=3)
-    amount = models.DecimalField(max_digits=25, decimal_places=2, blank=True, null=True)
-    completion_time = models.DateTimeField(blank=True, null=True)
-    merchant = models.ForeignKey(Merchant, on_delete=models.PROTECT)
+    payment_app = models.ForeignKey(PaymentApp, on_delete=models.PROTECT)
+    initialisation_time = models.DateTimeField(default=datetime.utcnow)
+
+    """payee"""
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, editable=False, blank=True, null=True)
+    object_id = models.PositiveIntegerField(editable=False, blank=True, null=True)
+    payee_object = GenericForeignKey('content_type', 'object_id')
 
     STATUS_CHOICES = (
         (1, 'initiated'),
@@ -44,15 +46,15 @@ class Transaction(models.Model):
         return str(self.pk)
 
 
-class Payment(models.Model):
+class PaymentDetail(models.Model):
     """Payment details provided by payment app"""
-    transaction = models.OneToOneField(Transaction, on_delete=models.PROTECT)
-    payment_app = models.ForeignKey(PaymentApp, on_delete=models.PROTECT)
+    payment = models.OneToOneField(Payment, on_delete=models.PROTECT)
     currency = models.CharField(max_length=3)
     amount = models.DecimalField(max_digits=25, decimal_places=2)
     method = models.CharField(max_length=50)
     reference_number = models.CharField(max_length=100)
     payment_method = models.CharField(max_length=50)
+    completion_time = models.DateTimeField(blank=True, null=True)
     payer = models.ForeignKey(Payer, on_delete=models.PROTECT)
     comment = models.CharField(max_length=255, blank=True, null=True)
 

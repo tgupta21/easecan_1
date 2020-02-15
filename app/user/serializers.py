@@ -1,6 +1,6 @@
 from django.contrib.auth import authenticate, get_user_model
 from rest_framework import serializers
-from .models import Merchant, Customer, Payer
+from .models import Merchant, Payer
 from directory.models import Directory
 
 
@@ -24,7 +24,7 @@ class MerchantSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Merchant
-        exclude = ['is_verified']
+        exclude = ['is_verified', 'is_active']
 
     def create(self, validated_data):
         """Create a new merchant with encrypted password and return it"""
@@ -60,13 +60,6 @@ class AuthTokenSerializer(serializers.Serializer):
 
         attrs['user'] = user
         return attrs
-
-
-class CustomerSerializer(serializers.ModelSerializer):
-    """Serialize customer object"""
-    class Meta:
-        model = Customer
-        fields = '__all__'
 
 
 class PayerSerializer(serializers.ModelSerializer):

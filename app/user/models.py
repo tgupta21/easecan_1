@@ -32,6 +32,7 @@ class Merchant(models.Model):
     business_category = models.PositiveSmallIntegerField(choices=BUSINESS_TYPE)
 
     is_verified = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=False)
 
     website = models.URLField(blank=True, null=True)
 
@@ -42,6 +43,7 @@ class PaymentApp(models.Model):
     """Payment apps or banks user model"""
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=20)
+    is_active = models.BooleanField(default=False)
 
     def __str__(self):
         return self.name
@@ -49,15 +51,6 @@ class PaymentApp(models.Model):
 
 class Payer(models.Model):
     """Details of person paying, provided by payment app"""
-    name = models.CharField(max_length=50)
-    phone = PhoneNumberField()
-
-    def __str__(self):
-        return str(self.phone)
-
-
-class Customer(models.Model):
-    """Details of customer of merchant"""
     name = models.CharField(max_length=50)
     phone = PhoneNumberField()
 
