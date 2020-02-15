@@ -22,7 +22,32 @@ class PaymentRequest(models.Model):
         return str(self.pk)
 
 
-class Payment(models.Model):
+class PaymentDetail(models.Model):
+    """Payment details provided by payment app"""
+    currency = models.CharField(max_length=3)
+    amount = models.DecimalField(max_digits=25, decimal_places=2)
+    reference_id = models.CharField(max_length=100)
+    payment_method = models.CharField(max_length=50)
+    completion_time = models.DateTimeField(default=datetime.utcnow)
+    payer = models.ForeignKey(Payer, on_delete=models.PROTECT)
+    comment = models.CharField(max_length=255, blank=True, null=True)
+
+    def __str__(self):
+        return str(self.pk)
+
+
+class Refund(models.Model):
+    """Model for refunds"""
+    currency = models.CharField(max_length=3)
+    amount = models.DecimalField(max_digits=25, decimal_places=2)
+    reference_id = models.CharField(max_length=100)
+    time = models.DateTimeField(default=datetime.utcnow)
+
+    def __str__(self):
+        return str(self.pk)
+
+
+class Transaction(models.Model):
     """Storing all the transactions"""
     payment_app = models.ForeignKey(PaymentApp, on_delete=models.PROTECT)
     initialisation_time = models.DateTimeField(default=datetime.utcnow)
@@ -42,21 +67,9 @@ class Payment(models.Model):
 
     status = models.PositiveSmallIntegerField(choices=STATUS_CHOICES, default=1)
 
-    def __str__(self):
-        return str(self.pk)
+    payment_detail = models.OneToOneField(PaymentDetail, on_delete=models.PROTECT, blank=True, null=True)
 
-
-class PaymentDetail(models.Model):
-    """Payment details provided by payment app"""
-    payment = models.OneToOneField(Payment, on_delete=models.PROTECT)
-    currency = models.CharField(max_length=3)
-    amount = models.DecimalField(max_digits=25, decimal_places=2)
-    method = models.CharField(max_length=50)
-    reference_number = models.CharField(max_length=100)
-    payment_method = models.CharField(max_length=50)
-    completion_time = models.DateTimeField(blank=True, null=True)
-    payer = models.ForeignKey(Payer, on_delete=models.PROTECT)
-    comment = models.CharField(max_length=255, blank=True, null=True)
+    refund = models.OneToOneField(Refund, blank=True, null=True)
 
     def __str__(self):
         return str(self.pk)

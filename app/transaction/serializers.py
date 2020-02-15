@@ -1,6 +1,6 @@
 from django.contrib.contenttypes.models import ContentType
 from rest_framework import serializers
-from .models import PaymentRequest, Payment
+from .models import PaymentRequest, Transaction, PaymentDetail
 from directory.models import Directory
 from user.models import Merchant, Payer
 from user.serializers import PayerSerializer
@@ -48,7 +48,7 @@ class InitiatePaymentSerializer(serializers.ModelSerializer):
     payee_object = PayeeRelatedField(read_only=True)
 
     class Meta:
-        model = Payment
+        model = Transaction
         fields = ('id', 'uid', 'initialisation_time', 'payee_object', 'status')
         read_only_fields = ('initialisation_time', 'payee_object', 'status')
 
@@ -56,6 +56,43 @@ class InitiatePaymentSerializer(serializers.ModelSerializer):
         uid = validated_data.pop('uid')
         directory = Directory.objects.get(uid=uid)
         payee_object = directory.payee_object
-        payment = Payment(**validated_data, payee_object=payee_object)
-        payment.save()
-        return payment
+        transaction = Transaction(**validated_data, payee_object=payee_object)
+        transaction.save()
+        return transaction
+
+
+class PaymentDetailSerializer(serializers.ModelSerializer):
+    """Serialize payment details"""
+    payer = PayerSerializer()
+
+    class Meta:
+        model = PaymentDetail
+        fields = ('id', 'currency', 'amount', 'reference_id',
+                  'payment_method', 'completion_time', 'payer', 'comment')
+        read_only_fields = ('completion_time',)
+
+
+class CompletePaymentSerializer(serializers.ModelSerializer):
+    """Serializer for successful payment"""
+    id = serializers.IntegerField(required=True)
+    payment_detail = PaymentDetailSerializer(required=True)
+    payee_object = PayeeRelatedField(read_only=True)
+
+    class Meta:
+        model = Transaction
+        fields = ('id', 'payment_detail', 'initialisation_time', 'payee_object', 'status')
+        read_only_fields = ('initialisation_time', 'payee_object', 'status')
+
+    def create(self, validated_data):
+        transaction = Transaction.objects.get(id=validated_data.get('id'))
+        payment_detail_data = validated_data.pop('payment_detail')
+        payer_data = payment_detail_data.pop('payer')
+        payer, created = Payer.objects.get_or_create(name=payer_data.get('name'),
+                                                     email=payer_data.get('email'),
+                                                     phone=payer_data.get('phone'))
+        payment_detail = PaymentDetail(**payment_detail_data, payer=payer)
+        payment_detail.save()
+        transaction.payment_detail = payment_detail
+        transaction.status = 2
+        transaction.save()
+        return transaction

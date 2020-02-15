@@ -53,6 +53,7 @@ class Payer(models.Model):
     """Details of person paying, provided by payment app"""
     name = models.CharField(max_length=50)
     phone = PhoneNumberField()
+    email = models.EmailField(max_length=255)
 
     def __str__(self):
         return str(self.phone)

@@ -3,7 +3,7 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework.response import Response
 from . import serializers
 from rest_framework.permissions import IsAuthenticated
-from .models import PaymentRequest
+from .models import PaymentRequest, Transaction
 from user.models import PaymentApp, Merchant
 from directory.models import Directory
 from datetime import datetime
@@ -38,3 +38,22 @@ class InitiatePaymentView(generics.CreateAPIView):
             serializer.save(payment_app=payment_app)
         else:
             raise APIException('your account is not active')
+
+
+class CompletePaymentView(generics.CreateAPIView):
+    """View to complete payment request by payment app"""
+    serializer_class = serializers.CompletePaymentSerializer
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (IsAuthenticated,)
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        payment_app = PaymentApp.objects.get(user=user)
+        transaction = Transaction.objects.get(id=self.request.data['id'])
+        if transaction.payment_app == payment_app:
+            if transaction.status == 1:
+                serializer.save()
+            else:
+                raise APIException('you cannot complete this transaction')
+        else:
+            raise APIException('you are not authorised')
