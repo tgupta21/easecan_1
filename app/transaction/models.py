@@ -69,7 +69,7 @@ class Transaction(models.Model):
 
     payment_detail = models.OneToOneField(PaymentDetail, on_delete=models.PROTECT, blank=True, null=True)
 
-    refund = models.OneToOneField(Refund, blank=True, null=True)
+    refund = models.OneToOneField(Refund, blank=True, null=True, on_delete=models.PROTECT)
 
     def __str__(self):
         return str(self.pk)
