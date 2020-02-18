@@ -38,6 +38,8 @@ class Merchant(models.Model):
 
     uid = GenericRelation(Directory, related_query_name='merchant')
 
+    currency = models.CharField(max_length=3)
+
 
 class PaymentApp(models.Model):
     """Payment apps or banks user model"""

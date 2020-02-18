@@ -1,7 +1,7 @@
 from .models import Directory
 from user.models import Merchant
 from rest_framework import viewsets, mixins, status
-from rest_framework.authentication import TokenAuthentication
+from knox.auth import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from .serializers import CreateStaticDirectory
 

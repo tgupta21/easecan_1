@@ -9,4 +9,5 @@ urlpatterns = [
     path('user/', include('user.urls')),
     path('transaction/', include('transaction.urls')),
     path('directory/', include('directory.urls')),
+    path('authorisation/', include('authorisation.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -1,3 +1,9 @@
 <component name="ProjectDictionaryState">
-  <dictionary name="Tushar" />
+  <dictionary name="Tushar">
+    <words>
+      <w>authtoken</w>
+      <w>corsheaders</w>
+      <w>hazmat</w>
+    </words>
+  </dictionary>
 </component>

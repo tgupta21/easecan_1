@@ -10,7 +10,7 @@ class MerchantDetailSerializer(serializers.ModelSerializer):
     """Serializer to show merchant details"""
     class Meta:
         model = Merchant
-        fields = ('id', 'business_name', 'website')
+        fields = ('id', 'business_name', 'website', 'currency')
 
 
 class PaymentRequestSerializer(serializers.ModelSerializer):
@@ -43,7 +43,7 @@ class PayeeRelatedField(serializers.RelatedField):
 
 
 class InitiatePaymentSerializer(serializers.ModelSerializer):
-    """Serialize a transaction"""
+    """Serialize a transaction at initialisation"""
     uid = serializers.UUIDField(required=True, write_only=True)
     payee_object = PayeeRelatedField(read_only=True)
 
@@ -73,15 +73,15 @@ class PaymentDetailSerializer(serializers.ModelSerializer):
 
 
 class CompletePaymentSerializer(serializers.ModelSerializer):
-    """Serializer for successful payment"""
+    """Serializer for transaction after successful payment"""
     id = serializers.IntegerField(required=True)
     payment_detail = PaymentDetailSerializer(required=True)
     payee_object = PayeeRelatedField(read_only=True)
 
     class Meta:
         model = Transaction
-        fields = ('id', 'payment_detail', 'initialisation_time', 'payee_object', 'status')
-        read_only_fields = ('initialisation_time', 'payee_object', 'status')
+        fields = ('id', 'payment_detail', 'initialisation_time', 'payee_object', 'status', 'is_international')
+        read_only_fields = ('initialisation_time', 'payee_object', 'status', 'is_international')
 
     def create(self, validated_data):
         transaction = Transaction.objects.get(id=validated_data.get('id'))
@@ -94,5 +94,7 @@ class CompletePaymentSerializer(serializers.ModelSerializer):
         payment_detail.save()
         transaction.payment_detail = payment_detail
         transaction.status = 2
+        if transaction.payee_object.currency != payment_detail_data.get('currency'):
+            transaction.is_international = True
         transaction.save()
         return transaction

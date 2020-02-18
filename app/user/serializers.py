@@ -36,7 +36,7 @@ class MerchantSerializer(serializers.ModelSerializer):
         return merchant
 
 
-class AuthTokenSerializer(serializers.Serializer):
+class KnoxAuthTokenSerializer(serializers.Serializer):
     """Serializer for the user authentication object"""
     phone = serializers.CharField()
     password = serializers.CharField(
