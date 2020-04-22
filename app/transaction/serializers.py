@@ -2,15 +2,25 @@ from django.contrib.contenttypes.models import ContentType
 from rest_framework import serializers
 from .models import PaymentRequest, Transaction, PaymentDetail
 from directory.models import Directory
-from user.models import Merchant, Payer
+from user.models import Merchant, Payer, PaymentApp
 from user.serializers import PayerSerializer
+from rest_framework import status
 
 
 class MerchantDetailSerializer(serializers.ModelSerializer):
     """Serializer to show merchant details"""
+
     class Meta:
         model = Merchant
         fields = ('id', 'business_name', 'website', 'currency')
+
+
+class PaymentAppDetailSerializer(serializers.ModelSerializer):
+    """Serialize the payment app object"""
+
+    class Meta:
+        model = PaymentApp
+        fields = ('id', 'name')
 
 
 class PaymentRequestSerializer(serializers.ModelSerializer):
@@ -33,6 +43,7 @@ class PaymentRequestSerializer(serializers.ModelSerializer):
 
 class PayeeRelatedField(serializers.RelatedField):
     """Serializer for payee object in Payment"""
+
     def to_representation(self, value):
         if isinstance(value, PaymentRequest):
             serializer = PaymentRequestSerializer(value)
@@ -49,14 +60,16 @@ class InitiatePaymentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Transaction
-        fields = ('id', 'uid', 'initialisation_time', 'payee_object', 'status')
-        read_only_fields = ('initialisation_time', 'payee_object', 'status')
+        fields = ('id', 'uid', 'initialisation_time', 'payee_object', 'status', 'currency', 'amount')
+        read_only_fields = ('initialisation_time', 'payee_object', 'status', 'currency', 'amount')
 
     def create(self, validated_data):
         uid = validated_data.pop('uid')
         directory = Directory.objects.get(uid=uid)
         payee_object = directory.payee_object
-        transaction = Transaction(**validated_data, payee_object=payee_object)
+        if directory.content_type.model == 'PaymentRequest':
+            transaction = Transaction(**validated_data, payee_object=payee_object,
+                                      currency=payee_object.currency, amount=payee_object.amount)
         transaction.save()
         return transaction
 

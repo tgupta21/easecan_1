@@ -17,7 +17,7 @@ class Directory(models.Model):
     is_active = models.BooleanField(default=True)
 
     def __str__(self):
-        return self.display_name+': '+str(self.uid)
+        return str(self.display_name)+': '+str(self.uid)
 
     @classmethod
     def create(cls, payee, name):

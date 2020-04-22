@@ -4,6 +4,7 @@
       <w>authtoken</w>
       <w>corsheaders</w>
       <w>hazmat</w>
+      <w>ifsc</w>
     </words>
   </dictionary>
 </component>

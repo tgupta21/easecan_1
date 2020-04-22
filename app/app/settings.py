@@ -44,10 +44,9 @@ INSTALLED_APPS = [
     'knox',
     'phonenumber_field',
     'core',
-    'authorisation',
-    'transaction',
-    'directory',
     'user',
+    'authorisation',
+    'directory',
 ]
 
 MIDDLEWARE = [
