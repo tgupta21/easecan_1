@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'user',
     'authorisation',
     'directory',
+    'transaction',
 ]
 
 MIDDLEWARE = [
