@@ -24,7 +24,21 @@ class PaymentRequestView(generics.CreateAPIView):
         else:
             raise APIException('invalid request')
 
-#
+
+class CurrencyConverterView(generics.CreateAPIView):
+    """send request for currency converter"""
+    serializer_class = serializers.CurrencyConverterSerializer
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (IsAuthenticated,)
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        payment_app = PaymentApp.objects.get(user=user)
+        if payment_app.is_active:
+            serializer.save(payment_app=payment_app)
+        else:
+            raise APIException('your account is not active')
+
 # class InitiatePaymentView(generics.CreateAPIView):
 #     """View to initiate a payment"""
 #     serializer_class = serializers.InitiatePaymentSerializer

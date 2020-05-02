@@ -5,7 +5,7 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericRelation
 from datetime import datetime
-
+from uuid import uuid4
 from directory.models import Directory
 
 
@@ -59,3 +59,14 @@ class Transaction(models.Model):
 
     def __str__(self):
         return str(self.pk)
+
+
+class CurrencyConverter(models.Model):
+    """Storing all currency conversion request"""
+    time = models.DateTimeField(default=datetime.utcnow)
+    payment_app = models.ForeignKey(PaymentApp, on_delete=models.PROTECT)
+    currency = models.CharField(max_length=3)
+    amount = models.DecimalField(max_digits=25, decimal_places=2)
+    payment_currency = models.CharField(max_length=3)
+    converted_amount = models.DecimalField(max_digits=25, decimal_places=2)
+    key = models.UUIDField(default=uuid4)

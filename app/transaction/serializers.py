@@ -1,10 +1,11 @@
 from django.contrib.contenttypes.models import ContentType
 from rest_framework import serializers
-from .models import PaymentRequest, Transaction
+from .models import PaymentRequest, Transaction, CurrencyConverter
 from directory.models import Directory
 from user.models import Merchant, Payer, PaymentApp
 from user.serializers import PayerSerializer
 from rest_framework import status
+from .currency_converter import payment_value
 
 
 class MerchantDetailSerializer(serializers.ModelSerializer):
@@ -12,7 +13,7 @@ class MerchantDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Merchant
-        fields = ('id', 'business_name', 'website')
+        fields = ('id', 'business_name', 'website', 'business_country')
 
 
 class PaymentRequestSerializer(serializers.ModelSerializer):
@@ -31,6 +32,23 @@ class PaymentRequestSerializer(serializers.ModelSerializer):
                                      name=payment_request.merchant.business_name + ': ' + payment_request.order_id)
         directory.save()
         return payment_request
+
+
+class CurrencyConverterSerializer(serializers.ModelSerializer):
+    """serializer to convert currency by the payment app"""
+
+    class Meta:
+        model = CurrencyConverter
+        fields = ('currency', 'amount', 'payment_currency', 'converted_amount', 'key')
+        read_only_fields = ('converted_amount', 'key')
+
+    def create(self, validated_data):
+        payment_app = validated_data.pop('payment_app')
+        converted_amount = payment_value(**validated_data)
+        currency_converter = CurrencyConverter(payment_app=payment_app, converted_amount=converted_amount,
+                                               **validated_data)
+        currency_converter.save()
+        return currency_converter
 
 
 # class PayeeRelatedField(serializers.RelatedField):
