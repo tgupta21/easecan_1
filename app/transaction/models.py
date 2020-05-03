@@ -48,6 +48,7 @@ class Transaction(models.Model):
     currency = models.CharField(max_length=3, blank=True, null=True)
     amount = models.DecimalField(max_digits=25, decimal_places=2, blank=True, null=True)
 
+    key = models.UUIDField(blank=True, null=True)
     payment_currency = models.CharField(max_length=3, blank=True, null=True)
     payment_amount = models.DecimalField(max_digits=25, decimal_places=2, blank=True, null=True)
     payment_reference_id = models.CharField(max_length=100, blank=True, null=True)
@@ -69,5 +70,5 @@ class CurrencyConverter(models.Model):
     currency = models.CharField(max_length=3)
     amount = models.DecimalField(max_digits=25, decimal_places=2)
     payment_currency = models.CharField(max_length=3)
-    converted_amount = models.DecimalField(max_digits=25, decimal_places=2)
+    payment_amount = models.DecimalField(max_digits=25, decimal_places=2)
     key = models.UUIDField(default=uuid4)

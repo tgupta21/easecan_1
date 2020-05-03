@@ -6,6 +6,8 @@ from user.models import Merchant, Payer, PaymentApp
 from user.serializers import PayerSerializer
 from rest_framework import status
 from .currency_converter import payment_value
+from datetime import datetime
+from rest_framework.exceptions import APIException
 
 
 class MerchantDetailSerializer(serializers.ModelSerializer):
@@ -39,13 +41,13 @@ class CurrencyConverterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CurrencyConverter
-        fields = ('currency', 'amount', 'payment_currency', 'converted_amount', 'key')
-        read_only_fields = ('converted_amount', 'key')
+        fields = ('currency', 'amount', 'payment_currency', 'payment_amount', 'key')
+        read_only_fields = ('payment_amount', 'key')
 
     def create(self, validated_data):
         payment_app = validated_data.pop('payment_app')
-        converted_amount = payment_value(**validated_data)
-        currency_converter = CurrencyConverter(payment_app=payment_app, converted_amount=converted_amount,
+        payment_amount = payment_value(**validated_data)
+        currency_converter = CurrencyConverter(payment_app=payment_app, payment_amount=payment_amount,
                                                **validated_data)
         currency_converter.save()
         return currency_converter
@@ -100,40 +102,64 @@ class InitiatePaymentSerializer(serializers.ModelSerializer):
         transaction.save()
         return transaction
 
-# class PaymentDetailSerializer(serializers.ModelSerializer):
-#     """Serialize payment details"""
-#     payer = PayerSerializer()
-#
-#     class Meta:
-#         model = PaymentDetail
-#         fields = ('id', 'currency', 'amount', 'reference_id',
-#                   'payment_method', 'completion_time', 'payer', 'comment')
-#         read_only_fields = ('completion_time',)
-#
-#
-# class CompletePaymentSerializer(serializers.ModelSerializer):
-#     """Serializer for transaction after successful payment"""
-#     id = serializers.IntegerField(required=True)
-#     payment_detail = PaymentDetailSerializer(required=True)
-#     payee_object = PayeeRelatedField(read_only=True)
-#
-#     class Meta:
-#         model = Transaction
-#         fields = ('id', 'payment_detail', 'initialisation_time', 'payee_object', 'status', 'is_international')
-#         read_only_fields = ('initialisation_time', 'payee_object', 'status', 'is_international')
-#
-#     def create(self, validated_data):
-#         transaction = Transaction.objects.get(id=validated_data.get('id'))
-#         payment_detail_data = validated_data.pop('payment_detail')
-#         payer_data = payment_detail_data.pop('payer')
-#         payer, created = Payer.objects.get_or_create(name=payer_data.get('name'),
-#                                                      email=payer_data.get('email'),
-#                                                      phone=payer_data.get('phone'))
-#         payment_detail = PaymentDetail(**payment_detail_data, payer=payer)
-#         payment_detail.save()
-#         transaction.payment_detail = payment_detail
-#         transaction.status = 2
-#         if transaction.payee_object.currency != payment_detail_data.get('currency'):
-#             transaction.is_international = True
-#         transaction.save()
-#         return transaction
+
+class CompletePaymentSerializer(serializers.ModelSerializer):
+    """Serializer for transaction after successful payment"""
+    id = serializers.IntegerField(required=True)
+    payer = PayerSerializer()
+
+    class Meta:
+        model = Transaction
+        fields = ('id', 'uid', 'display_name', 'initialisation_time', 'merchant', 'currency', 'amount', 'key',
+                  'payment_currency', 'payment_amount', 'payment_reference_id', 'payment_method', 'payment_comment',
+                  'payer', 'completion_time', 'is_international')
+        read_only_fields = ('uid', 'display_name', 'initialisation_time', 'merchant', 'amount', 'currency',
+                            'payment_currency', 'completion_time', 'is_international')
+
+    def create(self, validated_data):
+        transaction = Transaction.objects.get(id=validated_data.get('id'))
+        payer_data = validated_data.pop('payer')
+        payer, created = Payer.objects.get_or_create(name=payer_data.get('name'),
+                                                     email=payer_data.get('email'),
+                                                     phone=payer_data.get('phone'))
+
+        payment_amount = validated_data.get('payment_amount')
+
+        if validated_data.get('key') is None:
+            if transaction.amount is None:
+                transaction.amount = payment_amount
+            else:
+                if transaction.amount != payment_amount:
+                    raise APIException('payment amount not valid')
+
+            transaction.payment_currency = transaction.currency
+            transaction.payment_amount = validated_data.get('payment_amount')
+
+        else:
+            converter = CurrencyConverter.objects.get(key=validated_data.get('key'))
+            transaction.key = validated_data.get('key')
+            
+            if transaction.amount is None:
+                if converter.currency == transaction.currency:
+                    transaction.amount = converter.amount
+                    transaction.payment_currency = converter.payment_currency
+                    transaction.payment_amount = converter.payment_amount
+                    transaction.is_international = True
+                else:
+                    raise APIException('invalid key')
+            else:
+                if converter.amount == transaction.amount and converter.currency == transaction.currency:
+                    transaction.payment_currency = converter.payment_currency
+                    transaction.payment_amount = converter.payment_amount
+                    transaction.is_international = True
+                else:
+                    raise APIException('invalid key')
+
+        transaction.payment_reference_id = validated_data.get('payment_reference_id')
+        transaction.payment_method = validated_data.get('payment_method')
+        transaction.payment_comment = validated_data.get('payment_comment')
+        transaction.completion_time = datetime.utcnow()
+        transaction.payer = payer
+        transaction.status = 2
+        transaction.save()
+        return transaction
