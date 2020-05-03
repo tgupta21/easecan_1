@@ -22,7 +22,7 @@ class PaymentRequestSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PaymentRequest
-        fields = ('id', 'merchant', 'order_id', 'currency', 'amount', 'description','time')
+        fields = ('id', 'merchant', 'order_id', 'currency', 'amount', 'time')
         read_only_fields = ('merchant', 'time',)
 
     def create(self, validated_data):
@@ -51,47 +51,55 @@ class CurrencyConverterSerializer(serializers.ModelSerializer):
         return currency_converter
 
 
-# class PayeeRelatedField(serializers.RelatedField):
-#     """Serializer for payee object in Payment"""
-#
-#     def to_representation(self, value):
-#         if isinstance(value, PaymentRequest):
-#             serializer = PaymentRequestSerializer(value)
-#         if isinstance(value, Merchant):
-#             serializer = MerchantDetailSerializer(value)
-#
-#         return serializer.data
-#
-#
-# class PaymentAppDetailSerializer(serializers.ModelSerializer):
-#     """Serialize the payment app object"""
-#
-#     class Meta:
-#         model = PaymentApp
-#         fields = ('id', 'name')
-#
-#
-# class InitiatePaymentSerializer(serializers.ModelSerializer):
-#     """Serialize a transaction at initialisation"""
-#     uid = serializers.UUIDField(required=True, write_only=True)
-#     payee_object = PayeeRelatedField(read_only=True)
-#
-#     class Meta:
-#         model = Transaction
-#         fields = ('id', 'uid', 'initialisation_time', 'payee_object', 'status', 'currency', 'amount')
-#         read_only_fields = ('initialisation_time', 'payee_object', 'status', 'currency', 'amount')
-#
-#     def create(self, validated_data):
-#         uid = validated_data.pop('uid')
-#         directory = Directory.objects.get(uid=uid)
-#         payee_object = directory.payee_object
-#         if directory.content_type.model == 'PaymentRequest':
-#             transaction = Transaction(**validated_data, payee_object=payee_object,
-#                                       currency=payee_object.currency, amount=payee_object.amount)
-#         transaction.save()
-#         return transaction
-#
-#
+class PayeeRelatedField(serializers.RelatedField):
+    """Serializer for payee object in Payment"""
+
+    def to_representation(self, value):
+        if isinstance(value, PaymentRequest):
+            serializer = PaymentRequestSerializer(value)
+        if isinstance(value, Merchant):
+            serializer = MerchantDetailSerializer(value)
+
+        return serializer.data
+
+
+class PaymentAppDetailSerializer(serializers.ModelSerializer):
+    """Serialize the payment app object"""
+
+    class Meta:
+        model = PaymentApp
+        fields = ('id', 'name')
+
+
+class InitiatePaymentSerializer(serializers.ModelSerializer):
+    """Serialize a transaction at initialisation"""
+    # payee_object = PayeeRelatedField(read_only=True)
+    merchant = MerchantDetailSerializer(read_only=True)
+
+    class Meta:
+        model = Transaction
+        fields = ('id', 'uid', 'display_name', 'initialisation_time', 'merchant', 'currency', 'amount')
+        read_only_fields = ('display_name', 'initialisation_time', 'merchant', 'currency', 'amount')
+
+    def create(self, validated_data):
+        directory = Directory.objects.get(uid=validated_data.get('uid'))
+        display_name = directory.display_name
+
+        if isinstance(directory.payee_object, Merchant):
+            merchant = directory.payee_object
+            transaction = Transaction(merchant=merchant, display_name=display_name, currency=merchant.currency,
+                                      **validated_data)
+        if isinstance(directory.payee_object, PaymentRequest):
+            payment_request = directory.payee_object
+            merchant = payment_request.merchant
+            currency = payment_request.currency
+            amount = payment_request.amount
+            transaction = Transaction(merchant=merchant, display_name=display_name, currency=currency,
+                                      amount=amount, **validated_data)
+
+        transaction.save()
+        return transaction
+
 # class PaymentDetailSerializer(serializers.ModelSerializer):
 #     """Serialize payment details"""
 #     payer = PayerSerializer()
